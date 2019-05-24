@@ -39,7 +39,9 @@ uint16_t led4_pin = GPIO_PIN_7;
 int volume;
 int frequency;
 int update_flag;
-volatile int updated_time;
+volatile int interrupt_time;
+volatile int rise;
+volatile int fall;
 volatile char debug[100];
 
 static void Error_Handler(void);
@@ -59,9 +61,9 @@ void GPIO_Init()
 
 	//Set up Volume buttons
 	button_handle.Pin = vol_up_pin;
-	button_handle.Mode = GPIO_MODE_IT_RISING;
+	button_handle.Mode = GPIO_MODE_IT_RISING_FALLING;
 	button_handle.Pull = GPIO_NOPULL;
-	button_handle.Speed = GPIO_SPEED_LOW;
+	button_handle.Speed = GPIO_SPEED_HIGH;
 	HAL_GPIO_Init(vol_up_port, &button_handle);
 
 	button_handle.Pin = vol_down_pin;
@@ -102,7 +104,9 @@ int main(void)
 	frequency = 0;
 	volume = 0;
 	update_flag = 0;
-	updated_time = 0;
+	interrupt_time = 0;
+	rise = 0;
+	fall = 0;
 
 	HAL_Init();
 	SystemClock_Config();
@@ -133,6 +137,16 @@ int main(void)
 		HAL_GPIO_WritePin(GPIOF, led3_pin, HAL_GPIO_ReadPin(freq_up_port, freq_up_pin));
 		HAL_GPIO_WritePin(GPIOF, led4_pin, HAL_GPIO_ReadPin(freq_down_port, freq_down_pin));
 
+		// after 5 seconds we reset the rise / fall counters, because sometimes things get out of sync.
+		// The button is just not that accurate.
+		if (rise != 0 && HAL_GetTick() - rise > 5000)
+		{
+			rise = 0;
+			fall = 0;
+			sprintf(debug, "RESET! - curr %d : prev interrupt %d : rise %d : fall %d", HAL_GetTick(), interrupt_time, rise, fall);
+			update_flag = 1;
+		}
+
 		if (update_flag)
 		{
 
@@ -148,7 +162,7 @@ int main(void)
 
 			BSP_LCD_SetTextColor(LCD_COLOR_RED);
 			BSP_LCD_SetFont(&Font12);
-			BSP_LCD_DisplayStringAt(50, 230, (uint8_t *)debug, LEFT_MODE);
+			BSP_LCD_DisplayStringAt(20, 230, (uint8_t *)debug, LEFT_MODE);
 
 			update_flag = 0;
 		}
@@ -177,23 +191,62 @@ void EXTI15_10_IRQHandler()
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	int curr = HAL_GetTick();
-	if (curr - updated_time <= 200) {
-		updated_time = curr;
+	int current_ticks = HAL_GetTick();
+	int modifier = 0;
+
+	if (current_ticks - interrupt_time <= 100 || current_ticks - rise <= 100)
+	{
+		interrupt_time = current_ticks;
 		return;
 	}
 
-	if (GPIO_Pin == freq_down_pin)
-		frequency--;
-	if (GPIO_Pin == freq_up_pin)
-		frequency++;
-	if (GPIO_Pin == vol_up_pin)
-		volume++;
-	if (GPIO_Pin == vol_down_pin)
-		volume--;
+	sprintf(debug, "curr %d : prev interrupt %d : rise %d : fall %d", current_ticks, interrupt_time, rise, fall);
 
-	updated_time = curr;
+	if (rise == 0)
+	{
+		rise = current_ticks; //rising_signal
+		return;
+	}
+	else
+	{
+		fall = current_ticks;
+	}
+
+	if (GPIO_Pin & (vol_up_pin | vol_down_pin))
+	{
+		if (fall - rise > 1000)
+			modifier = 5;
+		else
+			modifier = 1;
+
+		if (GPIO_Pin == vol_up_pin)
+			volume += modifier;
+		if (GPIO_Pin == vol_down_pin)
+			volume -= modifier;
+	}
+
+	else if (GPIO_Pin & (freq_up_pin | freq_down_pin))
+	{
+		if (fall - rise > 1000)
+		{
+			if (GPIO_Pin == freq_up_pin)
+				volume++;
+			if (GPIO_Pin == freq_down_pin)
+				volume--;
+		}
+		else
+		{
+			//			if (GPIO_Pin == freq_up_pin)
+			// inc_preset();
+			//				if (GPIO_Pin == freq_down_pin)
+			// dec_preset();
+		}
+	}
+
+	interrupt_time = current_ticks;
 	update_flag = 1;
+	rise = 0;
+	fall = 0;
 }
 
 static void Error_Handler(void)
