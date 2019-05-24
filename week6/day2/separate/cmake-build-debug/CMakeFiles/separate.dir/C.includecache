@@ -1,0 +1,18 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/jessesmith/Proj/greenfox/jessesmith/week6/separate/pi.c
+stdio.h
+-
+stdlib.h
+-
+pi.h
+/Users/jessesmith/Proj/greenfox/jessesmith/week6/separate/pi.h
+
+/Users/jessesmith/Proj/greenfox/jessesmith/week6/separate/pi.h
+

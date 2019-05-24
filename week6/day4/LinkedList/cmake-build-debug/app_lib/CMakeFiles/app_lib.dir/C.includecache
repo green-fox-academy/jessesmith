@@ -1,0 +1,16 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/jessesmith/Proj/greenfox/jessesmith/week6/day4/LinkedList/app_lib/linked_list.c
+stdlib.h
+-
+linked_list.h
+/Users/jessesmith/Proj/greenfox/jessesmith/week6/day4/LinkedList/app_lib/linked_list.h
+
+/Users/jessesmith/Proj/greenfox/jessesmith/week6/day4/LinkedList/app_lib/linked_list.h
+

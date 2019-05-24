@@ -1,0 +1,6 @@
+Debug/
+HAL_Driver/
+.metadata/
+*.o
+*.d
+

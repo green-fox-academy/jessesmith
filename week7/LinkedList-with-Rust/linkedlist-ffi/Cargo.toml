@@ -1,0 +1,12 @@
+[package]
+name = "linkedlist-ffi"
+version = "0.1.0"
+authors = ["Jesse Smith <sosaucily@gmail.com>"]
+edition = "2018"
+
+[lib]
+name = "rust_linked_list"
+crate-type = ["staticlib", "cdylib"]
+
+[dependencies]
+libc = "0.2"
