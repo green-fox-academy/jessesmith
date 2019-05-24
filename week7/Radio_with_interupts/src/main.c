@@ -40,6 +40,7 @@ int volume;
 int frequency;
 int update_flag;
 volatile int updated_time;
+volatile char debug[100];
 
 static void Error_Handler(void);
 static void SystemClock_Config(void);
@@ -119,11 +120,11 @@ int main(void)
 
 	char freq_text[100];
 	sprintf(freq_text, "Freq: %d", frequency);
-	BSP_LCD_DisplayStringAt(50, 85, (uint8_t *)freq_text, LEFT_MODE);
+	BSP_LCD_DisplayStringAt(50, 80, (uint8_t *)freq_text, LEFT_MODE);
 
 	char vol_text[100];
 	sprintf(vol_text, "Volume: %d", volume);
-	BSP_LCD_DisplayStringAt(50, 160, (uint8_t *)vol_text, LEFT_MODE);
+	BSP_LCD_DisplayStringAt(50, 155, (uint8_t *)vol_text, LEFT_MODE);
 
 	while (1)
 	{
@@ -137,11 +138,17 @@ int main(void)
 
 			BSP_LCD_Clear(LCD_COLOR_DARKGRAY);
 
+			BSP_LCD_SetTextColor(LCD_COLOR_LIGHTYELLOW);
+			BSP_LCD_SetFont(&LCD_DEFAULT_FONT);
 			sprintf(freq_text, "Freq: %d", frequency);
-			BSP_LCD_DisplayStringAt(50, 75, (uint8_t *)freq_text, LEFT_MODE);
+			BSP_LCD_DisplayStringAt(50, 80, (uint8_t *)freq_text, LEFT_MODE);
 
 			sprintf(vol_text, "Volume: %d", volume);
-			BSP_LCD_DisplayStringAt(50, 150, (uint8_t *)vol_text, LEFT_MODE);
+			BSP_LCD_DisplayStringAt(50, 155, (uint8_t *)vol_text, LEFT_MODE);
+
+			BSP_LCD_SetTextColor(LCD_COLOR_RED);
+			BSP_LCD_SetFont(&Font12);
+			BSP_LCD_DisplayStringAt(50, 230, (uint8_t *)debug, LEFT_MODE);
 
 			update_flag = 0;
 		}
@@ -170,7 +177,9 @@ void EXTI15_10_IRQHandler()
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if (HAL_GetTick() - updated_time <= 200) {
+	int curr = HAL_GetTick();
+	if (curr - updated_time <= 200) {
+		updated_time = curr;
 		return;
 	}
 
@@ -183,7 +192,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	if (GPIO_Pin == vol_down_pin)
 		volume--;
 
-	updated_time = HAL_GetTick();
+	updated_time = curr;
 	update_flag = 1;
 }
 
