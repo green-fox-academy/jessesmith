@@ -16,9 +16,10 @@
 GPIO_InitTypeDef led_handle, button_handle;
 
 GPIO_TypeDef *vol_up_port = GPIOB;
-GPIO_TypeDef *vol_down_port = GPIOB;
 uint16_t button1_pin = GPIO_PIN_4;
 uint16_t vol_up_pin = GPIO_PIN_4;
+
+GPIO_TypeDef *vol_down_port = GPIOB;
 uint16_t button2_pin = GPIO_PIN_14;
 uint16_t vol_down_pin = GPIO_PIN_14;
 
@@ -124,33 +125,10 @@ int main(void)
 
 	while (1)
 	{
-//		HAL_GPIO_WritePin(GPIOF, led1_pin, HAL_GPIO_ReadPin(vol_port, vol_up_pin));
-//		HAL_GPIO_WritePin(GPIOF, led2_pin, HAL_GPIO_ReadPin(vol_port, vol_down_pin));
-//		HAL_GPIO_WritePin(GPIOF, led3_pin, HAL_GPIO_ReadPin(freq_port, freq_up_pin));
-//		HAL_GPIO_WritePin(GPIOF, led4_pin, HAL_GPIO_ReadPin(freq_port, freq_down_pin));
-		//
-		//		if (HAL_GPIO_ReadPin(freq_port, freq_down_pin))
-		//		{
-		//			frequency--;
-		//			update_flag = 1;
-		//		}
-		//		if (HAL_GPIO_ReadPin(freq_port, freq_up_pin))
-		//		{
-		//			frequency++;
-		//			update_flag = 1;
-		//		}
-		//
-		//		if (HAL_GPIO_ReadPin(vol_port, vol_down_pin))
-		//		{
-		//			volume--;
-		//			update_flag = 1;
-		//		}
-		//
-		//		if (HAL_GPIO_ReadPin(vol_port, vol_up_pin))
-		//		{
-		//			volume++;
-		//			update_flag = 1;
-		//		}
+		HAL_GPIO_WritePin(GPIOF, led1_pin, HAL_GPIO_ReadPin(vol_up_port, vol_up_pin));
+		HAL_GPIO_WritePin(GPIOF, led2_pin, HAL_GPIO_ReadPin(vol_down_port, vol_down_pin));
+		HAL_GPIO_WritePin(GPIOF, led3_pin, HAL_GPIO_ReadPin(freq_up_port, freq_up_pin));
+		HAL_GPIO_WritePin(GPIOF, led4_pin, HAL_GPIO_ReadPin(freq_down_port, freq_down_pin));
 
 		if (update_flag)
 		{
@@ -180,22 +158,17 @@ void EXTI3_IRQHandler()
 
 void EXTI4_IRQHandler()
 {
-	BSP_LED_Toggle(LED_GREEN);
 	HAL_GPIO_EXTI_IRQHandler(vol_up_pin);
 }
 
 void EXTI15_10_IRQHandler()
 {
-	BSP_LED_Toggle(LED_GREEN);
 	HAL_GPIO_EXTI_IRQHandler(vol_down_pin);
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	/* this is the place for the user code */
-//	BSP_LED_Toggle(LED_GREEN);
-	int x = GPIO_Pin;
-	x = x + 1;
 	if (GPIO_Pin == freq_down_pin)
 		frequency--;
 	if (GPIO_Pin == freq_up_pin)
