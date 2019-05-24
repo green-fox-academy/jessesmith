@@ -8,7 +8,6 @@
   ******************************************************************************
 */
 
-#include <stdlib.h>
 #include <stdio.h>
 #include "stm32f7xx.h"
 #include "stm32746g_discovery.h"
@@ -16,17 +15,20 @@
 
 GPIO_InitTypeDef led_handle, button_handle;
 
-GPIO_TypeDef *vol_port = GPIOB;
+GPIO_TypeDef *vol_up_port = GPIOB;
+GPIO_TypeDef *vol_down_port = GPIOB;
 uint16_t button1_pin = GPIO_PIN_4;
 uint16_t vol_up_pin = GPIO_PIN_4;
 uint16_t button2_pin = GPIO_PIN_14;
 uint16_t vol_down_pin = GPIO_PIN_14;
 
-GPIO_TypeDef *freq_port = GPIOC;
+GPIO_TypeDef *freq_up_port = GPIOC;
 uint16_t button3_pin = GPIO_PIN_6;
 uint16_t freq_up_pin = GPIO_PIN_6;
-uint16_t button4_pin = GPIO_PIN_7;
-uint16_t freq_down_pin = GPIO_PIN_7;
+
+GPIO_TypeDef *freq_down_port = GPIOI;
+uint16_t button4_pin = GPIO_PIN_3;
+uint16_t freq_down_pin = GPIO_PIN_3;
 
 uint16_t led1_pin = GPIO_PIN_10;
 uint16_t led2_pin = GPIO_PIN_9;
@@ -45,6 +47,7 @@ void GPIO_Init()
 	__HAL_RCC_GPIOF_CLK_ENABLE();
 	__HAL_RCC_GPIOC_CLK_ENABLE();
 	__HAL_RCC_GPIOB_CLK_ENABLE();
+	__HAL_RCC_GPIOI_CLK_ENABLE();
 
 	//Set up leds
 	led_handle.Pin = (led1_pin | led2_pin | led3_pin | led4_pin);
@@ -52,25 +55,33 @@ void GPIO_Init()
 	HAL_GPIO_Init(GPIOF, &led_handle);
 
 	//Set up Volume buttons
-	button_handle.Pin = (vol_up_pin | vol_down_pin);
-	button_handle.Mode = GPIO_MODE_INPUT;
+	button_handle.Pin = vol_up_pin;
+	button_handle.Mode = GPIO_MODE_IT_RISING;
 	button_handle.Pull = GPIO_NOPULL;
-	button_handle.Speed = GPIO_SPEED_FAST;
-	HAL_GPIO_Init(vol_port, &button_handle);
+	button_handle.Speed = GPIO_SPEED_LOW;
+	HAL_GPIO_Init(vol_up_port, &button_handle);
+
+	button_handle.Pin = vol_down_pin;
+	HAL_GPIO_Init(vol_down_port, &button_handle);
 
 	//Set up freq buttons
-	button_handle.Pin = (freq_up_pin | freq_down_pin);
-	HAL_GPIO_Init(freq_port, &button_handle);
+	button_handle.Pin = freq_up_pin;
+	HAL_GPIO_Init(freq_up_port, &button_handle);
 
-	/* assign a priority to our interrupt line */
-	HAL_NVIC_SetPriority(EXTI4_IRQn, 2, 0);
-	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 2, 0);
-	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 2, 0);
+	button_handle.Pin = freq_down_pin;
+	HAL_GPIO_Init(freq_down_port, &button_handle);
 
 	/* tell the interrupt handling unit to process our interrupts */
+	HAL_NVIC_EnableIRQ(EXTI3_IRQn);
 	HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+	/* assign a priority to our interrupt line */
+	HAL_NVIC_SetPriority(EXTI3_IRQn, 2, 0);
+	HAL_NVIC_SetPriority(EXTI4_IRQn, 2, 0);
+	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 2, 0);
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 2, 0);
 }
 
 void LCD_Init()
@@ -113,10 +124,10 @@ int main(void)
 
 	while (1)
 	{
-		HAL_GPIO_WritePin(GPIOF, led1_pin, HAL_GPIO_ReadPin(vol_port, vol_up_pin));
-		HAL_GPIO_WritePin(GPIOF, led2_pin, HAL_GPIO_ReadPin(vol_port, vol_down_pin));
-		HAL_GPIO_WritePin(GPIOF, led3_pin, HAL_GPIO_ReadPin(freq_port, freq_up_pin));
-		HAL_GPIO_WritePin(GPIOF, led4_pin, HAL_GPIO_ReadPin(freq_port, freq_down_pin));
+//		HAL_GPIO_WritePin(GPIOF, led1_pin, HAL_GPIO_ReadPin(vol_port, vol_up_pin));
+//		HAL_GPIO_WritePin(GPIOF, led2_pin, HAL_GPIO_ReadPin(vol_port, vol_down_pin));
+//		HAL_GPIO_WritePin(GPIOF, led3_pin, HAL_GPIO_ReadPin(freq_port, freq_up_pin));
+//		HAL_GPIO_WritePin(GPIOF, led4_pin, HAL_GPIO_ReadPin(freq_port, freq_down_pin));
 		//
 		//		if (HAL_GPIO_ReadPin(freq_port, freq_down_pin))
 		//		{
@@ -159,15 +170,12 @@ int main(void)
 
 void EXTI9_5_IRQHandler()
 {
-	BSP_LED_Toggle(LED_GREEN);
 	HAL_GPIO_EXTI_IRQHandler(freq_up_pin);
-	HAL_GPIO_EXTI_IRQHandler(freq_down_pin);
 }
 
-void EXTI15_10_IRQHandler()
+void EXTI3_IRQHandler()
 {
-	BSP_LED_Toggle(LED_GREEN);
-	HAL_GPIO_EXTI_IRQHandler(vol_down_pin);
+	HAL_GPIO_EXTI_IRQHandler(freq_down_pin);
 }
 
 void EXTI4_IRQHandler()
@@ -176,10 +184,16 @@ void EXTI4_IRQHandler()
 	HAL_GPIO_EXTI_IRQHandler(vol_up_pin);
 }
 
+void EXTI15_10_IRQHandler()
+{
+	BSP_LED_Toggle(LED_GREEN);
+	HAL_GPIO_EXTI_IRQHandler(vol_down_pin);
+}
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	/* this is the place for the user code */
-	BSP_LED_Toggle(LED_GREEN);
+//	BSP_LED_Toggle(LED_GREEN);
 	int x = GPIO_Pin;
 	x = x + 1;
 	if (GPIO_Pin == freq_down_pin)
