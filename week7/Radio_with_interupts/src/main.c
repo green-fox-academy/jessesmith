@@ -39,6 +39,7 @@ uint16_t led4_pin = GPIO_PIN_7;
 int volume;
 int frequency;
 int update_flag;
+volatile int updated_time;
 
 static void Error_Handler(void);
 static void SystemClock_Config(void);
@@ -100,6 +101,7 @@ int main(void)
 	frequency = 0;
 	volume = 0;
 	update_flag = 0;
+	updated_time = 0;
 
 	HAL_Init();
 	SystemClock_Config();
@@ -117,11 +119,11 @@ int main(void)
 
 	char freq_text[100];
 	sprintf(freq_text, "Freq: %d", frequency);
-	BSP_LCD_DisplayStringAt(50, 75, (uint8_t *)freq_text, LEFT_MODE);
+	BSP_LCD_DisplayStringAt(50, 85, (uint8_t *)freq_text, LEFT_MODE);
 
 	char vol_text[100];
 	sprintf(vol_text, "Volume: %d", volume);
-	BSP_LCD_DisplayStringAt(50, 150, (uint8_t *)vol_text, LEFT_MODE);
+	BSP_LCD_DisplayStringAt(50, 160, (uint8_t *)vol_text, LEFT_MODE);
 
 	while (1)
 	{
@@ -168,7 +170,10 @@ void EXTI15_10_IRQHandler()
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	/* this is the place for the user code */
+	if (HAL_GetTick() - updated_time <= 200) {
+		return;
+	}
+
 	if (GPIO_Pin == freq_down_pin)
 		frequency--;
 	if (GPIO_Pin == freq_up_pin)
@@ -178,6 +183,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	if (GPIO_Pin == vol_down_pin)
 		volume--;
 
+	updated_time = HAL_GetTick();
 	update_flag = 1;
 }
 
