@@ -1,6 +1,7 @@
 Debug/
 HAL_Driver/
 .metadata/
+.vscode/
 *.o
 *.d
 
