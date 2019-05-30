@@ -38,6 +38,7 @@ typedef enum
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define UART_PUTCHAR int __io_putchar(int ch)
+#define UART_GETCHAR int __io_getchar()
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -64,6 +65,8 @@ static void MX_USART1_UART_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 static void MX_GPIO_Init_Custom(void);
+void LED_Init(Led_TypeDef Led);
+void LED_Toggle(Led_TypeDef Led);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -373,8 +376,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 UART_PUTCHAR
 {
-    HAL_UART_Transmit(&huart1, (uint8_t*)&ch, 1, 0xFFFF);
+    HAL_UART_Transmit(&huart1, (uint8_t*)&ch, 1, HAL_MAX_DELAY);
     return ch;
+}
+
+UART_GETCHAR
+{
+
+uint8_t ch8;
+
+HAL_UART_Receive(&huart1,&ch8,1,HAL_MAX_DELAY);
+
+return ch8;
+
 }
 
 void LED_Init(Led_TypeDef Led)
