@@ -4,4 +4,5 @@ HAL_Driver/
 .vscode/
 *.o
 *.d
+.idea/
 
