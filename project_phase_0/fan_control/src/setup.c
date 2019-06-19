@@ -7,23 +7,23 @@
 		 * 50% * 0.01 s = 0.005 s: 0.005 low, then 0.005 s high;
 		 * our eyes are not able to notice that it is a vibrating light
 		*/
-		pwm_config.Pulse = 50;
-		pwm_config.OCMode = TIM_OCMODE_PWM1;
-		pwm_config.OCPolarity = TIM_OCPOLARITY_HIGH;
-		pwm_config.OCFastMode = TIM_OCFAST_ENABLE;
-
-		HAL_TIM_PWM_ConfigChannel(&tim2h, &pwm_config, TIM_CHANNEL_1);
+//		pwm_config.Pulse = 0;
+//		pwm_config.OCMode = TIM_OCMODE_PWM1;
+//		pwm_config.OCPolarity = TIM_OCPOLARITY_HIGH;
+//		pwm_config.OCFastMode = TIM_OCFAST_ENABLE;
+//
+//		HAL_TIM_PWM_ConfigChannel(&tim2h, &pwm_config, TIM_CHANNEL_1);
 
 //		/*
 //		 * 50% * 0.01 s = 0.005 s: 0.005 low, then 0.005 s high;
 //		 * our eyes are not able to notice that it is a vibrating light
 //		*/
-//		pwm_config.Pulse = 50;
-//		pwm_config.OCMode = TIM_OCMODE_PWM1;
-//		pwm_config.OCPolarity = TIM_OCPOLARITY_HIGH;
-//		pwm_config.OCFastMode = TIM_OCFAST_ENABLE;
-//
-//		HAL_TIM_PWM_ConfigChannel(&tim3h, &pwm_config, TIM_CHANNEL_1);
+		pwm_config.Pulse = 0;
+		pwm_config.OCMode = TIM_OCMODE_PWM1;
+		pwm_config.OCPolarity = TIM_OCPOLARITY_HIGH;
+		pwm_config.OCFastMode = TIM_OCFAST_ENABLE;
+
+		HAL_TIM_PWM_ConfigChannel(&tim3h, &pwm_config, TIM_CHANNEL_1);
 //
 //		/*
 //		 * 50% * 0.01 s = 0.005 s: 0.005 low, then 0.005 s high;
@@ -42,23 +42,23 @@
 		__HAL_RCC_GPIOA_CLK_ENABLE();
 
 		PA15_LED_config.Pin = GPIO_PIN_15;
-		PA15_LED_config.Mode = GPIO_MODE_AF_PP; /* configure as output, in PUSH-PULL mode */
+		PA15_LED_config.Mode = GPIO_MODE_AF_PP; /* configure as input */
 		PA15_LED_config.Pull = GPIO_NOPULL;
-		PA15_LED_config.Speed = GPIO_SPEED_HIGH;
+		PA15_LED_config.Speed = GPIO_SPEED_FREQ_LOW;
 		PA15_LED_config.Alternate = GPIO_AF1_TIM2;  /* we need this alternate function to use TIM2 in OC mode */
 
 		HAL_GPIO_Init(GPIOA, &PA15_LED_config);
 
-//		__HAL_RCC_GPIOB_CLK_ENABLE();
-//
-//		PB4_LED_config.Pin = GPIO_PIN_4	;
-//		PB4_LED_config.Mode = GPIO_MODE_AF_PP; /* configure as output, in PUSH-PULL mode */
-//		PB4_LED_config.Pull = GPIO_NOPULL;
-//		PB4_LED_config.Speed = GPIO_SPEED_HIGH;
-//		PB4_LED_config.Alternate = GPIO_AF2_TIM3;  /* we need this alternate function to use TIM3 in OC mode */
-//
-//		HAL_GPIO_Init(GPIOB, &PB4_LED_config);
-//
+		__HAL_RCC_GPIOB_CLK_ENABLE();
+
+		PB4_LED_config.Pin = GPIO_PIN_4	;
+		PB4_LED_config.Mode = GPIO_MODE_AF_PP; /* configure as output, in PUSH-PULL mode */
+		PB4_LED_config.Pull = GPIO_NOPULL;
+		PB4_LED_config.Speed = GPIO_SPEED_HIGH;
+		PB4_LED_config.Alternate = GPIO_AF2_TIM3;  /* we need this alternate function to use TIM3 in OC mode */
+
+		HAL_GPIO_Init(GPIOB, &PB4_LED_config);
+
 //		__HAL_RCC_GPIOI_CLK_ENABLE();
 //
 //		PI0_LED_config.Pin = GPIO_PIN_0;
@@ -74,40 +74,67 @@
 #ifdef USE_TIMERS
 	void Timers_Init()
 	{
+		//IC Timer
 		__HAL_RCC_TIM2_CLK_ENABLE();
 
+
+
+//		thing
+
 		tim2h.Instance = TIM2;
-		tim2h.Init.Prescaler = 16 - 1; // 108000000/108=1000000 -> speed of 1 count-up: 1/1000000 s = 0.001 ms
+		tim2h.Init.Prescaler = 16 - 1; // 16000000/16=1000000 -> speed of 1 count-up: 1/1000000 s = 0.001 ms
 		tim2h.Init.Period = 100 - 1; // 100 x 0.001 ms = 10 ms = 0.01 s period
 		tim2h.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 		tim2h.Init.CounterMode = TIM_COUNTERMODE_UP;
 
-		/* configuring the timer in PWM mode instead of calling HAL_TIM_Base_Init(&timer_handle) */
-		HAL_TIM_PWM_Init(&tim2h);
+		/* configuring the timer in IC mode instead of calling HAL_TIM_Base_Init(&timer_handle) */
+		HAL_TIM_IC_Init(&tim2h);
 
-//
-//		__HAL_RCC_TIM3_CLK_ENABLE();
-//
-//		tim3h.Instance = TIM3;
-//		tim3h.Init.Prescaler = 16 - 1; // 108000000/108=1000000 -> speed of 1 count-up: 1/1000000 s = 0.001 ms
-//		tim3h.Init.Period = 100 - 1; // 100 x 0.001 ms = 10 ms = 0.01 s period
-//		tim3h.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-//		tim3h.Init.CounterMode = TIM_COUNTERMODE_UP;
-//
-//		/* configuring the timer in PWM mode instead of calling HAL_TIM_Base_Init(&timer_handle) */
-//		HAL_TIM_PWM_Init(&tim3h);
-//
-//
-//		__HAL_RCC_TIM5_CLK_ENABLE();
-//
-//		tim5h.Instance = TIM5;
-//		tim5h.Init.Prescaler = 16 - 1; // 108000000/108=1000000 -> speed of 1 count-up: 1/1000000 s = 0.001 ms
-//		tim5h.Init.Period = 100 - 1; // 100 x 0.001 ms = 10 ms = 0.01 s period
-//		tim5h.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-//		tim5h.Init.CounterMode = TIM_COUNTERMODE_UP;
-//
-//		/* configuring the timer in PWM mode instead of calling HAL_TIM_Base_Init(&timer_handle) */
-//		HAL_TIM_PWM_Init(&tim5h);
+		TIM_MasterConfigTypeDef ms = { 0 };
+		ms.MasterOutputTrigger = TIM_TRGO_RESET;
+		ms.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+
+		HAL_TIMEx_MasterConfigSynchronization(&tim2h, &ms);
+
+		TIM_IC_InitTypeDef thing;
+		thing.ICPolarity = TIM_ICPOLARITY_RISING;
+		thing.ICSelection = TIM_ICSELECTION_DIRECTTI;
+		thing.ICPrescaler = TIM_ICPSC_DIV1;
+		thing.ICFilter = 0x0;
+
+		HAL_TIM_IC_ConfigChannel(&tim2h, &thing, TIM_CHANNEL_1);
+
+
+		HAL_NVIC_SetPriority(TIM2_IRQn, 2, 0);
+		HAL_NVIC_EnableIRQ(TIM2_IRQn);
+
+		//PWM control
+		__HAL_RCC_TIM3_CLK_ENABLE();
+
+		tim3h.Instance = TIM3;
+		tim3h.Init.Prescaler = 16 - 1; // 16000000/16=1000000 -> speed of 1 count-up: 1/1000000 s = 0.001 ms
+		tim3h.Init.Period = 100 - 1; // 100 x 0.001 ms = 10 ms = 0.01 s period
+		tim3h.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+		tim3h.Init.CounterMode = TIM_COUNTERMODE_UP;
+
+		/* configuring the timer in PWM mode instead of calling HAL_TIM_Base_Init(&timer_handle) */
+		HAL_TIM_PWM_Init(&tim3h);
+
+
+		//General timer
+		__HAL_RCC_TIM5_CLK_ENABLE();
+
+		tim5h.Instance = TIM5;
+		tim5h.Init.Prescaler = 160000 - 1; // 16000000/160000=100 -> speed of 1 count-up: 1/100 s = 0.1 ms
+		tim5h.Init.Period = 580 - 1; // 1000 x 10 ms = 10s period
+		tim5h.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+		tim5h.Init.CounterMode = TIM_COUNTERMODE_UP;
+
+		HAL_NVIC_SetPriority(TIM5_IRQn, 1, 0);
+		HAL_NVIC_EnableIRQ(TIM5_IRQn);
+
+		/* configuring the timer in PWM mode instead of calling HAL_TIM_Base_Init(&timer_handle) */
+		HAL_TIM_Base_Init(&tim5h);
 	}
 #endif
 

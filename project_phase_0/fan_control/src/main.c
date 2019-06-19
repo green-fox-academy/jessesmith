@@ -11,10 +11,12 @@
 #include "setup.h"
 
 volatile int new_pwm_val;
+volatile int blade_spin_count;
 
 int main(void)
 {
 	new_pwm_val = 0;
+	blade_spin_count = 0;
 
 	HAL_Init();
 	SystemClock_Config();
@@ -27,14 +29,18 @@ int main(void)
 #ifdef USE_TIMERS
 	Timers_Init();
 
-	HAL_TIM_Base_Start(&tim2h);
+	HAL_TIM_Base_Start(&tim3h);
+	HAL_TIM_Base_Start_IT(&tim5h);
 #endif
 
 #ifdef USE_PWMs
 	Init_PWMs();
 	Init_Pins_for_PWM_out();
 
-	HAL_TIM_PWM_Start(&tim2h, TIM_CHANNEL_1);
+//	HAL_TIM_PWM_Start(&tim2h, TIM_CHANNEL_1);
+	HAL_TIM_IC_Start_IT(&tim2h, TIM_CHANNEL_1); //Start timer in IC IT mode
+	HAL_TIM_Base_Start_IT(&tim2h);
+	HAL_TIM_PWM_Start(&tim3h, TIM_CHANNEL_1);
 #endif
 
 #ifdef USE_ADC
@@ -89,10 +95,39 @@ int main(void)
 			} else {
 				UART_data_in[UART_rx_count++] = UART_recv_data_char;
 			}
-			__HAL_TIM_SET_COMPARE(&tim2h, TIM_CHANNEL_1, new_pwm_val);
+			__HAL_TIM_SET_COMPARE(&tim3h, TIM_CHANNEL_1, new_pwm_val);
 			HAL_UART_Receive_IT(&huart1, &UART_recv_data_char, 1);
 		}
 #endif
+
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if (htim->Instance == TIM5) {
+		char debug[100];
+		sprintf(debug, "tim 5 period elapsed, blade spin count = %d \r\n", blade_spin_count);
+		printf(debug);
+		blade_spin_count = 0;
+	}
+}
+
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+	if (htim->Instance == TIM2) {
+		blade_spin_count++;
+	}
+}
+
+void TIM5_IRQHandler(void)
+{
+    HAL_TIM_IRQHandler(&tim5h);
+}
+
+void TIM2_IRQHandler(void)
+{
+    HAL_TIM_IRQHandler(&tim2h);
+}
+
 UART_PUTCHAR
 {
 	HAL_UART_Transmit(&huart1, (uint8_t*)&ch, 1, HAL_MAX_DELAY);
