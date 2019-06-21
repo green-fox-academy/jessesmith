@@ -10,13 +10,19 @@
 
 #include "setup.h"
 
-volatile int new_pwm_val;
 volatile int blade_spin_count;
+volatile int blade_speed_1, blade_speed_2, blade_speed_3;
+volatile int fan_speed_rpms;
+volatile int reference_speed_rpms;
+
+volatile int curr_pwm_val;
 
 int main(void)
 {
-	new_pwm_val = 0;
+	curr_pwm_val = 0;
 	blade_spin_count = 0;
+	blade_speed_1 = blade_speed_2 = blade_speed_3 = 0;
+	fan_speed_rpms = 0;
 
 	HAL_Init();
 	SystemClock_Config();
@@ -87,7 +93,7 @@ int main(void)
 	void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		{
 			if (UART_recv_data_char == '\r') {
-				new_pwm_val = strtol(UART_data_in);
+				reference_speed_rpms = strtol(UART_data_in);
 				UART_data_in[UART_rx_count++] = '\r';
 				UART_data_in[UART_rx_count++] = '\n';
 				HAL_UART_Transmit(huart, UART_data_in, UART_rx_count, HAL_MAX_DELAY);
@@ -95,7 +101,6 @@ int main(void)
 			} else {
 				UART_data_in[UART_rx_count++] = UART_recv_data_char;
 			}
-			__HAL_TIM_SET_COMPARE(&tim3h, TIM_CHANNEL_1, new_pwm_val);
 			HAL_UART_Receive_IT(&huart1, &UART_recv_data_char, 1);
 		}
 #endif
@@ -103,11 +108,35 @@ int main(void)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+	//Should fire every 100ms. (blade_count / 7) * 10 * 60 for rpms.
 	if (htim->Instance == TIM5) {
 		char debug[100];
-		sprintf(debug, "tim 5 period elapsed, blade spin count = %d \r\n", blade_spin_count);
-		printf(debug);
+		int new_pwm_val = curr_pwm_val;
+
+		//Measure current speed
+
+		blade_speed_3 = blade_speed_2;
+		blade_speed_2 = blade_speed_1;
+		blade_speed_1 = blade_spin_count / 7;
+		fan_speed_rpms = (blade_speed_1 + blade_speed_2 + blade_speed_3 / 3) * 60 * 1;
+
 		blade_spin_count = 0;
+
+		//Adjust power
+		if (fan_speed_rpms < reference_speed_rpms)
+			new_pwm_val += 5;
+		else
+			new_pwm_val -= 5;
+
+		if (new_pwm_val > 100) new_pwm_val = 100;
+		if (new_pwm_val < 0) new_pwm_val = 0;
+
+		sprintf(debug, "MA rpms = %d, ref_speed: %d, current_power: %d, new_power: %d \r\n", fan_speed_rpms, reference_speed_rpms, curr_pwm_val, new_pwm_val);
+		printf(debug);
+
+		__HAL_TIM_SET_COMPARE(&tim3h, TIM_CHANNEL_1, new_pwm_val);
+
+		curr_pwm_val = new_pwm_val;
 	}
 }
 

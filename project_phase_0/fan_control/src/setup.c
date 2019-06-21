@@ -125,8 +125,8 @@
 		__HAL_RCC_TIM5_CLK_ENABLE();
 
 		tim5h.Instance = TIM5;
-		tim5h.Init.Prescaler = 160000 - 1; // 16000000/160000=100 -> speed of 1 count-up: 1/100 s = 0.1 ms
-		tim5h.Init.Period = 580 - 1; // 1000 x 10 ms = 10s period
+		tim5h.Init.Prescaler = 16000 - 1; // 16000000/16000=1000 -> speed of 1 count-up: 1/1000 s = 1ms
+		tim5h.Init.Period = 1000 - 1; // 1000 x 1ms = 1s period
 		tim5h.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 		tim5h.Init.CounterMode = TIM_COUNTERMODE_UP;
 
