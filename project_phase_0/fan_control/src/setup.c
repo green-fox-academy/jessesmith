@@ -105,7 +105,7 @@
 		HAL_TIM_IC_ConfigChannel(&tim2h, &thing, TIM_CHANNEL_1);
 
 
-		HAL_NVIC_SetPriority(TIM2_IRQn, 2, 0);
+		HAL_NVIC_SetPriority(TIM2_IRQn, 1, 0);
 		HAL_NVIC_EnableIRQ(TIM2_IRQn);
 
 		//PWM control
@@ -130,7 +130,7 @@
 		tim5h.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 		tim5h.Init.CounterMode = TIM_COUNTERMODE_UP;
 
-		HAL_NVIC_SetPriority(TIM5_IRQn, 1, 0);
+		HAL_NVIC_SetPriority(TIM5_IRQn, 3, 0);
 		HAL_NVIC_EnableIRQ(TIM5_IRQn);
 
 		/* configuring the timer in PWM mode instead of calling HAL_TIM_Base_Init(&timer_handle) */

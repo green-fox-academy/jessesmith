@@ -10,19 +10,22 @@
 
 #include "setup.h"
 
+double calculate_P_output();
+
 volatile int blade_spin_count;
-volatile int blade_speed_1, blade_speed_2, blade_speed_3;
 volatile int fan_speed_rpms;
 volatile int reference_speed_rpms;
-
+volatile int integral;
 volatile int curr_pwm_val;
+volatile int t5_counter;
 
 int main(void)
 {
+	integral = 0;
 	curr_pwm_val = 0;
 	blade_spin_count = 0;
-	blade_speed_1 = blade_speed_2 = blade_speed_3 = 0;
 	fan_speed_rpms = 0;
+	t5_counter = 0;
 
 	HAL_Init();
 	SystemClock_Config();
@@ -108,36 +111,72 @@ int main(void)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	//Should fire every 100ms. (blade_count / 7) * 10 * 60 for rpms.
-	if (htim->Instance == TIM5) {
-		char debug[100];
-		int new_pwm_val = curr_pwm_val;
+	//TIM5 is at 10ms.
 
+
+	if (htim->Instance == TIM5) {
+//		t5_counter++;
+
+
+		char debug[100];
 		//Measure current speed
 
-		blade_speed_3 = blade_speed_2;
-		blade_speed_2 = blade_speed_1;
-		blade_speed_1 = blade_spin_count / 7;
-		fan_speed_rpms = (blade_speed_1 + blade_speed_2 + blade_speed_3 / 3) * 60 * 1;
+		fan_speed_rpms = blade_spin_count * 60 / 7; //get rid of my moving average
 
 		blade_spin_count = 0;
 
-		//Adjust power
-		if (fan_speed_rpms < reference_speed_rpms)
-			new_pwm_val += 5;
-		else
-			new_pwm_val -= 5;
-
-		if (new_pwm_val > 100) new_pwm_val = 100;
-		if (new_pwm_val < 0) new_pwm_val = 0;
-
-		sprintf(debug, "MA rpms = %d, ref_speed: %d, current_power: %d, new_power: %d \r\n", fan_speed_rpms, reference_speed_rpms, curr_pwm_val, new_pwm_val);
-		printf(debug);
+		int new_pwm_val = calculate_P_output();
 
 		__HAL_TIM_SET_COMPARE(&tim3h, TIM_CHANNEL_1, new_pwm_val);
 
 		curr_pwm_val = new_pwm_val;
+
+//		if (t5_counter % 100 == 0) {
+			sprintf(debug, "MA rpms = %d, ref_speed: %d, current_power: %d, new_power: %d, integral: %d \r\n", fan_speed_rpms, reference_speed_rpms, curr_pwm_val, new_pwm_val, integral);
+			printf(debug);
+//		}
 	}
+}
+
+double calculate_P_output()
+{
+	int ctrler_out;
+//	int new_pwm_val = curr_pwm_val;
+//
+//	//Adjust power
+//	if (fan_speed_rpms < reference_speed_rpms)
+//		new_pwm_val += 5;
+//	else
+//		new_pwm_val -= 5;
+//
+//	if (new_pwm_val > 100) new_pwm_val = 100;
+//	if (new_pwm_val < 0) new_pwm_val = 0;
+//
+//	return new_pwm_val;
+  /* The reference input (setpoint) - the output signal of the hardware, which is measured by a sensor. */
+  double err = reference_speed_rpms - fan_speed_rpms;
+
+  /* collecting error from the past, in order to decrease the steady error */
+  integral += err;
+
+  double Kp = 0.01;
+  double Ki = 0.01;
+  /* The output is the error multiplied with the Kp constant. */
+
+  /* The proportional component (P) is the error multiplied with the Kp constant.
+     * The integral component (I) is the sum of all previous error multiplied with the Ki constant.
+     * The output of the controller: P + I */
+    ctrler_out = Kp * err + Ki * integral;
+
+  /* Limit the output */
+  if (ctrler_out < 0) {
+      ctrler_out = 0;
+      integral = integral - err;
+  } else if (ctrler_out > 100) {
+      ctrler_out = 100;
+      integral = integral - err;
+  }
+  return ctrler_out;
 }
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
